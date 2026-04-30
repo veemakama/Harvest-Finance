@@ -42,6 +42,11 @@ describe('StellarAuth Component', () => {
       clearError: jest.fn(),
     } as any);
 
+    mockStellarLogin.mockResolvedValue(undefined);
+
+    // Ensure window.freighter is restored for each test (some tests delete it)
+    (window as any).freighter = mockFreighter;
+
     mockedAxios.post.mockResolvedValue({
       data: {
         access_token: 'test_token',

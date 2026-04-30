@@ -30,6 +30,7 @@ import {
 import axios from "@/lib/api-client";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { enqueueOfflineAction } from "@/lib/offline-support";
+import { toast } from 'react-toastify';
 
 interface WithdrawModalVault {
   id: string;
@@ -85,6 +86,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
     setIsLoading(true);
     setError(null);
+    let toastId: React.ReactText | null = null;
     try {
       const i128Amount = toI128(Number(amount));
 
@@ -99,18 +101,26 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
         setAmount("");
         return;
       }
+      toastId = toast.loading('Withdrawal pending — awaiting confirmation...', { autoClose: false });
 
       await axios.post(
         `http://localhost:3001/api/v1/farm-vaults/${vault!.id}/withdraw`,
         { amount: i128Amount },
         { headers: { Authorization: `Bearer ${token}` } },
       );
+
+      if (toastId) toast.update(toastId, { render: 'Withdrawal confirmed', type: 'success', isLoading: false, autoClose: 5000 });
       onSuccess?.();
       onClose();
       setAmount("");
     } catch (err: any) {
       console.error("Withdraw failed:", err);
       const parsed = parseStellarError(err);
+      if (toastId) {
+        toast.update(toastId, { render: parsed.message, type: 'error', isLoading: false, autoClose: 8000 });
+      } else {
+        toast.error(parsed.message);
+      }
       setError(parsed.message);
     } finally {
       setIsLoading(false);
